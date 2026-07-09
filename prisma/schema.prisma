@@ -1,0 +1,154 @@
+// DuoLearn 資料庫 Schema
+// 使用 Supabase Postgres 作為資料來源，Auth 使用者由 Supabase Auth 管理，
+// 這裡的 User.id 對應 Supabase Auth 的 auth.users.id (uuid)。
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum MaterialStatus {
+  UPLOADING
+  PARSING
+  GENERATING
+  READY
+  FAILED
+}
+
+enum LessonType {
+  NEW_CONCEPT
+  REVIEW
+  TEST
+  BOSS
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  FILL_BLANK
+  MATCHING
+  REORDER
+}
+
+enum ProgressStatus {
+  LOCKED
+  AVAILABLE
+  COMPLETED
+}
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  displayName   String?
+  avatarUrl     String?
+  xpTotal       Int      @default(0)
+  streakDays    Int      @default(0)
+  lastActiveAt  DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  materials     Material[]
+  progress      UserProgress[]
+  xpLogs        XpLog[]
+
+  @@map("users")
+}
+
+model Material {
+  id           String         @id @default(uuid())
+  userId       String
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  filename     String
+  fileType     String
+  storagePath  String
+  rawText      String?        @db.Text
+  status       MaterialStatus @default(UPLOADING)
+  errorMessage String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  units        Unit[]
+
+  @@index([userId])
+  @@map("materials")
+}
+
+model Unit {
+  id          String   @id @default(uuid())
+  materialId  String
+  material    Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  order       Int
+  icon        String   @default("book")
+  colorTheme  String   @default("primary")
+  createdAt   DateTime @default(now())
+
+  lessons     Lesson[]
+
+  @@index([materialId])
+  @@map("units")
+}
+
+model Lesson {
+  id        String     @id @default(uuid())
+  unitId    String
+  unit      Unit       @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  title     String
+  type      LessonType @default(NEW_CONCEPT)
+  order     Int
+  xpReward  Int        @default(10)
+  createdAt DateTime   @default(now())
+
+  questions Question[]
+  progress  UserProgress[]
+
+  @@index([unitId])
+  @@map("lessons")
+}
+
+model Question {
+  id        String       @id @default(uuid())
+  lessonId  String
+  lesson    Lesson       @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  type      QuestionType
+  order     Int
+  prompt    String
+  payload   Json
+  answer    Json
+  createdAt DateTime     @default(now())
+
+  @@index([lessonId])
+  @@map("questions")
+}
+
+model UserProgress {
+  id          String         @id @default(uuid())
+  userId      String
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId    String
+  lesson      Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  status      ProgressStatus @default(LOCKED)
+  stars       Int            @default(0)
+  bestScore   Int            @default(0)
+  completedAt DateTime?
+  updatedAt   DateTime       @updatedAt
+
+  @@unique([userId, lessonId])
+  @@index([userId])
+  @@map("user_progress")
+}
+
+model XpLog {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  delta     Int
+  source    String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("xp_logs")
+}
