@@ -2,6 +2,10 @@
 
 把你的講義、筆記、截圖上傳，AI 自動幫你生成一套多鄰國式的遊戲化學習地圖 —— 單元、關卡、生命值、經驗值、連續學習天數一應俱全。
 
+> **想要一個「打開網址就能註冊登入使用」的正式上線網站？** 看
+> [`DEPLOYMENT.md`](./DEPLOYMENT.md) —— 裡面有 Supabase + Vercel 的完整部署步驟。
+> 這份 README 主要是給本機開發用的。
+
 ## 技術棧
 
 - **框架**：Next.js 16（App Router）+ React 19 + TypeScript
